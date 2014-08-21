@@ -1,0 +1,77 @@
+diff --git src/lib/bfd.c src/lib/bfd.c
+index 8bfe385..c76c0d7 100644
+--- src/lib/bfd.c
++++ src/lib/bfd.c
+@@ -252,6 +252,15 @@ static void log_msg(enum vlog_level, const struct msg *, const char *message,
+ 
+ static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(20, 20);
+ 
++//Function added by Niels van Adrichem
++bool
++bfd_state_up(struct bfd *bfd)
++{
++        return bfd->state == STATE_UP;
++}
++
++
++
+ /* Returns true if the interface on which 'bfd' is running may be used to
+  * forward traffic according to the BFD session state. */
+ bool
+@@ -368,7 +377,7 @@ bfd_configure(struct bfd *bfd, const char *name, const struct smap *cfg,
+     atomic_store(&bfd->check_tnl_key,
+                  smap_get_bool(cfg, "check_tnl_key", false));
+     min_tx = smap_get_int(cfg, "min_tx", 100);
+-    min_tx = MAX(min_tx, 100);
++    min_tx = MAX(min_tx, 1); //Changed minimal interval from 100 to 1 ms by Niels van Adrichem
+     if (bfd->cfg_min_tx != min_tx) {
+         bfd->cfg_min_tx = min_tx;
+         if (bfd->state != STATE_UP
+@@ -379,7 +388,7 @@ bfd_configure(struct bfd *bfd, const char *name, const struct smap *cfg,
+     }
+ 
+     min_rx = smap_get_int(cfg, "min_rx", 1000);
+-    min_rx = MAX(min_rx, 100);
++    min_rx = MAX(min_rx, 1); //Changed minimal interval from 100 to 1 ms by Niels van Adrichem
+     if (bfd->cfg_min_rx != min_rx) {
+         bfd->cfg_min_rx = min_rx;
+         if (bfd->state != STATE_UP
+diff --git src/lib/bfd.h src/lib/bfd.h
+index 4e7d4cb..ca00232 100644
+--- src/lib/bfd.h
++++ src/lib/bfd.h
+@@ -48,6 +48,8 @@ struct bfd *bfd_ref(const struct bfd *);
+ void bfd_unref(struct bfd *);
+ 
+ void bfd_account_rx(struct bfd *, const struct dpif_flow_stats *);
++//Function added by Niels van Adrichem
++bool bfd_state_up(struct bfd *);
+ bool bfd_forwarding(struct bfd *);
+ void bfd_get_status(const struct bfd *, struct smap *);
+ void bfd_set_netdev(struct bfd *, const struct netdev *);
+diff --git src/ofproto/ofproto-dpif-xlate.c src/ofproto/ofproto-dpif-xlate.c
+index 91ce7b7..a09c05e 100644
+--- src/ofproto/ofproto-dpif-xlate.c
++++ src/ofproto/ofproto-dpif-xlate.c
+@@ -753,6 +753,8 @@ static bool
+ odp_port_is_alive(const struct xlate_ctx *ctx, ofp_port_t ofp_port)
+ {
+     struct xport *xport;
++    //BFD Definition added by Niels
++    struct bfd *bfd;
+ 
+     xport = get_ofp_port(ctx->xbridge, ofp_port);
+     if (!xport || xport->config & OFPUTIL_PC_PORT_DOWN ||
+@@ -760,6 +762,12 @@ odp_port_is_alive(const struct xlate_ctx *ctx, ofp_port_t ofp_port)
+         return false;
+     }
+ 
++	//Block added by Niels van Adrichem
++        bfd = xport->bfd;
++        if(bfd) {
++                return bfd_state_up(bfd);
++        }
++
+     return true;
+ }
+ 
