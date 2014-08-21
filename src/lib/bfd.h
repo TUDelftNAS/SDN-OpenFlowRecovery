@@ -48,6 +48,8 @@ struct bfd *bfd_ref(const struct bfd *);
 void bfd_unref(struct bfd *);
 
 void bfd_account_rx(struct bfd *, const struct dpif_flow_stats *);
+//Function added by Niels van Adrichem
+bool bfd_state_up(struct bfd *);
 bool bfd_forwarding(struct bfd *);
 void bfd_get_status(const struct bfd *, struct smap *);
 void bfd_set_netdev(struct bfd *, const struct netdev *);

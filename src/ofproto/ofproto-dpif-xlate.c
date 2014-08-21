@@ -753,12 +753,20 @@ static bool
 odp_port_is_alive(const struct xlate_ctx *ctx, ofp_port_t ofp_port)
 {
     struct xport *xport;
+    //BFD Definition added by Niels
+    struct bfd *bfd;
 
     xport = get_ofp_port(ctx->xbridge, ofp_port);
     if (!xport || xport->config & OFPUTIL_PC_PORT_DOWN ||
         xport->state & OFPUTIL_PS_LINK_DOWN) {
         return false;
     }
+
+	//Block added by Niels van Adrichem
+        bfd = xport->bfd;
+        if(bfd) {
+                return bfd_state_up(bfd);
+        }
 
     return true;
 }

@@ -252,6 +252,15 @@ static void log_msg(enum vlog_level, const struct msg *, const char *message,
 
 static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(20, 20);
 
+//Function added by Niels van Adrichem
+bool
+bfd_state_up(struct bfd *bfd)
+{
+        return bfd->state == STATE_UP;
+}
+
+
+
 /* Returns true if the interface on which 'bfd' is running may be used to
  * forward traffic according to the BFD session state. */
 bool
@@ -368,7 +377,7 @@ bfd_configure(struct bfd *bfd, const char *name, const struct smap *cfg,
     atomic_store(&bfd->check_tnl_key,
                  smap_get_bool(cfg, "check_tnl_key", false));
     min_tx = smap_get_int(cfg, "min_tx", 100);
-    min_tx = MAX(min_tx, 100);
+    min_tx = MAX(min_tx, 1); //Changed minimal interval from 100 to 1 ms by Niels van Adrichem
     if (bfd->cfg_min_tx != min_tx) {
         bfd->cfg_min_tx = min_tx;
         if (bfd->state != STATE_UP
@@ -379,7 +388,7 @@ bfd_configure(struct bfd *bfd, const char *name, const struct smap *cfg,
     }
 
     min_rx = smap_get_int(cfg, "min_rx", 1000);
-    min_rx = MAX(min_rx, 100);
+    min_rx = MAX(min_rx, 1); //Changed minimal interval from 100 to 1 ms by Niels van Adrichem
     if (bfd->cfg_min_rx != min_rx) {
         bfd->cfg_min_rx = min_rx;
         if (bfd->state != STATE_UP
